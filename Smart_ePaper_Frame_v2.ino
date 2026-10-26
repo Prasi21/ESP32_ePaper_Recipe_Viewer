@@ -17,77 +17,24 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client,
   else if(type == WS_EVT_DISCONNECT){
     Serial.println("Websocket client disconnected");
   }
-  // else if(type == WS_EVT_DATA){
-  //   AwsFrameInfo * info = (AwsFrameInfo*)arg;
-  //   if(info->opcode  == WS_TEXT){  // Got text data (the client checks if the display is busy)
-  //       client->text(responseToNewImage());
-  //   }
-  //   else{                         // Got binary data (the client sent the image)
-  //     // Send the received data to the display buffer.
-  //     loadImage((const char*)data, len, info->index);
-  //     if((info->index + len) == info->len){   // if this data was the end of the file
-  //       //client->text("IMAGE_LOADED");       // tell the client that the server got the image
-  //       Serial.printf("Updating Display: %d bytes total\n", info->len);
-  //       updateDisplay_withoutIdle();          // Display the image that received
-  //     }
-  //   }
+  else if(type == WS_EVT_DATA){
+    AwsFrameInfo * info = (AwsFrameInfo*)arg;
+    if(info->opcode  == WS_TEXT){  // Got text data (the client checks if the display is busy)
+        client->text(responseToNewImage());
+    }
+    else{                         // Got binary data (the client sent the image)
+      // Send the received data to the display buffer.
+      loadImage((const char*)data, len, info->index);
+      if((info->index + len) == info->len){   // if this data was the end of the file
+        //client->text("IMAGE_LOADED");       // tell the client that the server got the image
+        Serial.printf("Updating Display: %d bytes total\n", info->len);
+        updateDisplay_withoutIdle();          // Display the image that received
+      }
+    }
     
 
-  // }
-  //Temp debug code
-  else if (type == WS_EVT_DATA) {
-    AwsFrameInfo *info = (AwsFrameInfo*)arg;
+  }
 
-    if (info->opcode == WS_TEXT) {
-        client->text(responseToNewImage());
-    } else {
-        Serial.printf(
-            "Chunk: index=%u len=%u total=%u final=%d\n",
-            (unsigned int)info->index,
-            (unsigned int)len,
-            (unsigned int)info->len,
-            info->final
-        );
-
-        // Print the first few received bytes of the message.
-        if (info->index == 0) {
-            Serial.print("First received bytes: ");
-            for (size_t i = 0; i < 10 && i < len; i++) {
-                Serial.printf("%02X ", data[i]);
-            }
-            Serial.println();
-        }
-
-        loadImage((const char*)data, len, info->index);
-        if (info->index == 0) {
-            Serial.print("Buffer after first chunk: ");
-            for (int i = 0; i < 10; i++) {
-                Serial.printf("%02X ", imageBuffer[i]);
-            }
-            Serial.println();
-        }
-        
-        if ((info->index + len) == info->len) {
-            Serial.printf("Received %u bytes total\n",
-                          (unsigned int)info->len);
-
-            Serial.print("Received buffer, first 10 bytes: ");
-            for (int i = 0; i < 10; i++) {
-                Serial.printf("%02X ", imageBuffer[i]);
-            }
-            Serial.println();
-
-            Serial.print("Received buffer, row 0 bytes 0-9: ");
-            for (int i = 0; i < 10; i++) {
-                Serial.printf("%02X ", imageBuffer[i]);
-            }
-            Serial.println();
-
-            printFramebufferSamples();
-            updateDisplay_withoutIdle();
-        }
-    }
-}
 }
 
 char* responseToNewImage(){

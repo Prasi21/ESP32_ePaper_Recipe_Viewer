@@ -225,23 +225,6 @@ function sendImage() {
         }
     }
 
-	console.log("Image byte length:", bytes.length);
-
-	for (const y of [0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440]) {
-		const rowStart = y * 100;
-		console.log(
-			`Row ${y}:`,
-			Array.from(bytes.slice(rowStart, rowStart + 5))
-				.map(b => b.toString(16).padStart(2, "0"))
-				.join(" ")
-		);
-	}
-
-	console.log(
-    "Row 0 selected bytes:",
-    [0, 1, 2, 50, 99].map(i => bytes[i].toString(16).padStart(2, "0"))
-	);
-
     console.log("Sending monochrome image:", bytes.length, "bytes");
     websocket.send(bytes.buffer);
     console.log("Image sent");

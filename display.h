@@ -50,46 +50,16 @@ void displayStartTransmission() {
 }
 
 // Copy a WebSocket data chunk into its correct position.
-// void loadImage(const char* data, size_t length, size_t offset) {
-//     if (offset >= IMAGE_BYTES ||
-//         length > IMAGE_BYTES - offset) {
-//         Serial.println("Image data exceeds framebuffer size");
-//         return;
-//     }
-
-//     memcpy(imageBuffer + offset, data, length);
-// }
 void loadImage(const char* data, size_t length, size_t offset) {
-    if (offset + length > IMAGE_BYTES) {
-        Serial.printf(
-            "Image overflow: offset=%u length=%u capacity=%u\n",
-            (unsigned int)offset,
-            (unsigned int)length,
-            (unsigned int)IMAGE_BYTES
-        );
+    if (offset >= IMAGE_BYTES ||
+        length > IMAGE_BYTES - offset) {
+        Serial.println("Image data exceeds framebuffer size");
         return;
     }
 
-    memcpy(&imageBuffer[offset], data, length);
+    memcpy(imageBuffer + offset, data, length);
 }
 
-
-// Temp helper function
-void printFramebufferSamples() {
-    Serial.println("Framebuffer samples:");
-
-    for (int y = 0; y < 480; y += 40) {
-        Serial.printf(
-            "Row %d: %02X %02X %02X %02X %02X\n",
-            y,
-            imageBuffer[y * 100],
-            imageBuffer[y * 100 + 1],
-            imageBuffer[y * 100 + 2],
-            imageBuffer[y * 100 + 50],
-            imageBuffer[y * 100 + 99]
-        );
-    }
-}
 
 // Display the complete received image.
 // DisplayFrame handles transmission, refresh and BUSY waiting.
@@ -100,7 +70,6 @@ void updateDisplay_withoutIdle() {
     }
 
     Serial.println("Refreshing e-paper display");
-    printFramebufferSamples();
     epd.DisplayFrame(imageBuffer);
     Serial.println("Display refresh complete");
 }
