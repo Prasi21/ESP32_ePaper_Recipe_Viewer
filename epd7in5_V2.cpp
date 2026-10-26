@@ -99,60 +99,18 @@ int Epd::Init(void) {
     }
     Reset();
 
-    // SendCommand(0x01); 
-    // SendData(0x07);
-    // SendData(0x07);
-    // SendData(0x3f);
-    // SendData(0x3f);
+    SendCommand(0x01); 
+    SendData(0x07);
+    SendData(0x07);
+    SendData(0x3f);
+    SendData(0x3f);
 
-    // SendCommand(0x04);
-    // DelayMs(100);
-    // WaitUntilIdle();
-    
-    // SendCommand(0X00);			//PANNEL SETTING
-    // SendData(0x1F);   //KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
-
-    // SendCommand(0x61);        	//tres
-    // SendData(0x03);		//source 800
-    // SendData(0x20);
-    // SendData(0x01);		//gate 480
-    // SendData(0xE0);
-
-    // SendCommand(0X15);
-    // SendData(0x00);
-
-    // SendCommand(0X50);			//VCOM AND DATA INTERVAL SETTING
-    // SendData(0x10);
-    // SendData(0x07);
-
-    // SendCommand(0X60);			//TCON SETTING
-    // SendData(0x22);
-
-	SendCommand(0x01);  // power setting
-	SendData(0x17);  // 1-0=11: internal power
-	SendData(*(Voltage_Frame_7IN5_V2+6));  // VGH&VGL
-	SendData(*(Voltage_Frame_7IN5_V2+1));  // VSH
-	SendData(*(Voltage_Frame_7IN5_V2+2));  //  VSL
-	SendData(*(Voltage_Frame_7IN5_V2+3));  //  VSHR
-	
-	SendCommand(0x82);  // VCOM DC Setting
-	SendData(*(Voltage_Frame_7IN5_V2+4));  // VCOM
-
-	SendCommand(0x06);  // Booster Setting
-	SendData(0x27);
-	SendData(0x27);
-	SendData(0x2F);
-	SendData(0x17);
-	
-	SendCommand(0x30);   // OSC Setting
-	SendData(*(Voltage_Frame_7IN5_V2+0));  // 2-0=100: N=4  ; 5-3=111: M=7  ;  3C=50Hz     3A=100HZ
-
-    SendCommand(0x04); //POWER ON
+    SendCommand(0x04);
     DelayMs(100);
     WaitUntilIdle();
-
+    
     SendCommand(0X00);			//PANNEL SETTING
-    SendData(0x3F);   //KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
+    SendData(0x1F);   //KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
 
     SendCommand(0x61);        	//tres
     SendData(0x03);		//source 800
@@ -165,16 +123,60 @@ int Epd::Init(void) {
 
     SendCommand(0X50);			//VCOM AND DATA INTERVAL SETTING
     SendData(0x10);
-    SendData(0x00);
+    SendData(0x07);
 
     SendCommand(0X60);			//TCON SETTING
     SendData(0x22);
 
-    SendCommand(0x65);  // Resolution setting
-    SendData(0x00);
-    SendData(0x00);//800*480
-    SendData(0x00);
-    SendData(0x00);
+    // New init
+
+	// SendCommand(0x01);  // power setting
+	// SendData(0x17);  // 1-0=11: internal power
+	// SendData(*(Voltage_Frame_7IN5_V2+6));  // VGH&VGL
+	// SendData(*(Voltage_Frame_7IN5_V2+1));  // VSH
+	// SendData(*(Voltage_Frame_7IN5_V2+2));  //  VSL
+	// SendData(*(Voltage_Frame_7IN5_V2+3));  //  VSHR
+	
+	// SendCommand(0x82);  // VCOM DC Setting
+	// SendData(*(Voltage_Frame_7IN5_V2+4));  // VCOM
+
+	// SendCommand(0x06);  // Booster Setting
+	// SendData(0x27);
+	// SendData(0x27);
+	// SendData(0x2F);
+	// SendData(0x17);
+	
+	// SendCommand(0x30);   // OSC Setting
+	// SendData(*(Voltage_Frame_7IN5_V2+0));  // 2-0=100: N=4  ; 5-3=111: M=7  ;  3C=50Hz     3A=100HZ
+
+    // SendCommand(0x04); //POWER ON
+    // DelayMs(100);
+    // WaitUntilIdle();
+
+    // SendCommand(0X00);			//PANNEL SETTING
+    // SendData(0x3F);   //KW-3f   KWR-2F	BWROTP 0f	BWOTP 1f
+
+    // SendCommand(0x61);        	//tres
+    // SendData(0x03);		//source 800
+    // SendData(0x20);
+    // SendData(0x01);		//gate 480
+    // SendData(0xE0);
+
+    // SendCommand(0X15);
+    // SendData(0x00);
+
+    // SendCommand(0X50);			//VCOM AND DATA INTERVAL SETTING
+    // SendData(0x10);
+    // SendData(0x00);
+
+    // SendCommand(0X60);			//TCON SETTING
+    // SendData(0x22);
+
+    // SendCommand(0x65);  // Resolution setting
+    // SendData(0x00);
+    // SendData(0x00);//800*480
+    // SendData(0x00);
+    // SendData(0x00);
 
     SetLut_by_host(LUT_VCOM_7IN5_V2, LUT_WW_7IN5_V2, LUT_BW_7IN5_V2, LUT_WB_7IN5_V2, LUT_BB_7IN5_V2);
 
