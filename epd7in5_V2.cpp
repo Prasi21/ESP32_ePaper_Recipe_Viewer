@@ -105,6 +105,12 @@ int Epd::Init(void) {
     SendData(0x3f);
     SendData(0x3f);
 
+    SendCommand(0x06);  // BOOSTER_SOFT_START
+    SendData(0x17);
+    SendData(0x17);
+    SendData(0x28);
+    SendData(0x17);
+
     SendCommand(0x04);
     DelayMs(100);
     WaitUntilIdle();
@@ -178,7 +184,7 @@ int Epd::Init(void) {
     // SendData(0x00);
     // SendData(0x00);
 
-    SetLut_by_host(LUT_VCOM_7IN5_V2, LUT_WW_7IN5_V2, LUT_BW_7IN5_V2, LUT_WB_7IN5_V2, LUT_BB_7IN5_V2);
+    // SetLut_by_host(LUT_VCOM_7IN5_V2, LUT_WW_7IN5_V2, LUT_BW_7IN5_V2, LUT_WB_7IN5_V2, LUT_BB_7IN5_V2);
 
     return 0;
 }
@@ -203,13 +209,10 @@ void Epd::SendData(unsigned char data) {
  *  @brief: Wait until the busy_pin goes HIGH
  */
 void Epd::WaitUntilIdle(void) {
-    unsigned char busy;
-    Serial.print("e-Paper Busy\r\n ");
-    do{
-        SendCommand(0x71);
-        busy = DigitalRead(busy_pin);
-    }while(busy == 0);
-    Serial.print("e-Paper Busy Release\r\n ");
+    // BUSY is LOW while the panel is working.
+    while (DigitalRead(busy_pin) == 0) {
+        DelayMs(10);
+    }
     DelayMs(20);
 }
 
@@ -228,13 +231,23 @@ void Epd::Reset(void) {
 }
 
 void Epd::DisplayFrame(const unsigned char* frame_buffer) {
-    
-    SendCommand(0x13);
+    // The web UI sends 1 = black and 0 = white.
+    // 0x10 is the black/white plane (1 = white), so invert the buffer.
+    SendCommand(0x10);
     for (unsigned long j = 0; j < height; j++) {
         for (unsigned long i = 0; i < width/8; i++) {
             SendData(~frame_buffer[i + j * width/8]);
         }
     }
+
+    // The V2 panel needs the complementary data in the 0x13 plane.
+    SendCommand(0x13);
+    for (unsigned long j = 0; j < height; j++) {
+        for (unsigned long i = 0; i < width/8; i++) {
+            SendData(frame_buffer[i + j * width/8]);
+        }
+    }
+
     SendCommand(0x12);
     DelayMs(100);
     WaitUntilIdle();
@@ -300,15 +313,18 @@ void Epd::Sleep(void) {
 }
 
 void Epd::Clear(void) {
-    
-    // SendCommand(0x10);
-    // for(unsigned long i=0; i<height*width; i++) {
-    //     SendData(0x00);
-    // }
+    unsigned long pixelCount = height * width / 8;
+
+    SendCommand(0x10);
+    for (unsigned long i = 0; i < pixelCount; i++) {
+        SendData(0xFF);  // white
+    }
+
     SendCommand(0x13);
-    for(unsigned long i=0; i<height*width; i++)	{
+    for (unsigned long i = 0; i < pixelCount; i++) {
         SendData(0x00);
     }
+
     SendCommand(0x12);
     DelayMs(100);
     WaitUntilIdle();
