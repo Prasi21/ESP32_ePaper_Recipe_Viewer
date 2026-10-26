@@ -115,10 +115,10 @@ body{
 		
 		
 		<div  style="width: 100%; display: none;" >
-			<canvas style="width: 100%;" width="640" height="384" id="originalCanvas"/>
+			<canvas style="width: 100%;" width="800" height="480" id="originalCanvas"/>
 		</div>
 		<div style="width: 100%; border: 3px solid black; border-radius: 5px; background:white;" >
-			<canvas style="width: 100%;" width="640" height="384"  id="editedCanvas"/>
+			<canvas style="width: 100%;" width="800" height="480"  id="editedCanvas"/>
 		</div>
 		
 		<button onclick="uploadImage()" class="red-button" style="width: 100%; margin: 16px 2px 5px;">Upload to Frame</button>
@@ -139,7 +139,11 @@ body{
 			return 3;
 			}
 	}
-	var PALETTE = [[0  , 0  , 0  ], [255, 255, 255], [128, 0  , 0  ]];
+	var PALETTE = [
+		[0, 0, 0],       // Black
+		[255, 255, 255]  // White
+	];
+
 	function uploadImage(){
 		console.log("uploadImage");
 		
@@ -185,30 +189,65 @@ body{
 			websocket.close();
 		}	
 	}
-	function sendImage(){
-		var ctx = document.getElementById('editedCanvas').getContext('2d');
-		var imgData = ctx.getImageData(0,0,640,384);
-		var d = imgData.data;
-		var pixDataArray = new Array(640*384/4), j=0;
-		
-		for(var i=0; i<d.length;){   /*r,g,b,a*/
-			pix0 = rbg2bit(d[i],d[i+1],d[i+2]);
-			i+=4;
-			pix1 = rbg2bit(d[i],d[i+1],d[i+2]);
-			i+=4;
-			pix2 = rbg2bit(d[i],d[i+1],d[i+2]);
-			i+=4;
-			pix3 = rbg2bit(d[i],d[i+1],d[i+2]);
-			i+=4;
-			pixByte = (pix0<<6)|(pix1<<4)|(pix2<<2)|(pix3<<0);
-			if(j>=pixDataArray.length)break;
-			pixDataArray[j++] = pixByte;	
-		}
-		bytesArray = new Uint8Array(pixDataArray);
-		websocket.send( bytesArray.buffer );
-		console.log("SENDED");
-		websocket.close();
+
+function sendImage() {
+    const width = 800;
+    const height = 480;
+
+    const canvas = document.getElementById('editedCanvas');
+    const ctx = canvas.getContext('2d');
+    const image = ctx.getImageData(0, 0, width, height);
+    const pixels = image.data;
+
+    // Eight monochrome pixels per byte.
+    const bytes = new Uint8Array(width * height / 8);
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const pixelIndex = (y * width + x) * 4;
+
+            const r = pixels[pixelIndex];
+            const g = pixels[pixelIndex + 1];
+            const b = pixels[pixelIndex + 2];
+
+            // Convert RGB to perceived brightness.
+            const brightness =
+                0.299 * r + 0.587 * g + 0.114 * b;
+
+            // Black = 1, white = 0 in the input buffer.
+            if (brightness < 128) {
+                const byteIndex = y * (width / 8)
+                                + Math.floor(x / 8);
+                const bitPosition = 7 - (x % 8);
+
+                bytes[byteIndex] |= (1 << bitPosition);
+            }
+        }
+    }
+
+	console.log("Image byte length:", bytes.length);
+
+	for (const y of [0, 40, 80, 120, 160, 200, 240, 280, 320, 360, 400, 440]) {
+		const rowStart = y * 100;
+		console.log(
+			`Row ${y}:`,
+			Array.from(bytes.slice(rowStart, rowStart + 5))
+				.map(b => b.toString(16).padStart(2, "0"))
+				.join(" ")
+		);
 	}
+
+	console.log(
+    "Row 0 selected bytes:",
+    [0, 1, 2, 50, 99].map(i => bytes[i].toString(16).padStart(2, "0"))
+	);
+
+    console.log("Sending monochrome image:", bytes.length, "bytes");
+    websocket.send(bytes.buffer);
+    console.log("Image sent");
+    websocket.close();
+}
+
 	
 	function onError(evt){
 		console.log("ERROR:");
@@ -237,7 +276,7 @@ body{
 	
 		outputContrast.innerHTML = this.value;
 		var ctx = document.getElementById('originalCanvas').getContext('2d');
-		var imgData = ctx.getImageData(0,0,640,384);
+		var imgData = ctx.getImageData(0,0,800,480);
 		
 		imgData = contrastImage(imgData, this.value);
 		
@@ -268,14 +307,17 @@ body{
 		img.src = URL.createObjectURL(e.target.files[0]);
 		img.onload = function() {
 			ctxOrigin.drawImage(img, 0, 0, img.width,    img.height,    /*source rectangle*/
-			   0, 0, 640, 384); /*destination rectangle*/
+			   0, 0, 800, 480); /*destination rectangle*/
 			ctxEdited.drawImage(img, 0, 0, img.width,    img.height,     /*source rectangle*/
-			   0, 0, 640, 384); /*destination rectangle*/
+			   0, 0, 800, 480); /*destination rectangle*/
 		}
 	}
 
-	var PALETTE = [[0  , 0  , 0  ], [255, 255, 255], [128, 0  , 0  ]];
-					 
+	var PALETTE = [
+		[0, 0, 0],       // Black
+		[255, 255, 255]  // White
+	];	
+
 	function dist_to_pixel(r, g, b, color){
 		var d1 = Math.abs(r-color[0]);
 		var d2 = Math.abs(g-color[1]);
@@ -315,39 +357,61 @@ body{
 		
 	}
 
-	function dither(){
-		var R = 0, G = 1, B = 2, A=3;
-		var oldR, oldG, oldB, newRGB, quant_error, pos;
-		var height=384, width=640;
-		
-		var ctx = document.getElementById('editedCanvas').getContext('2d');
-		var imgData = ctx.getImageData(0,0,width,height);
-		var pixels = imgData.data;
-		
-		for(var y =0; y<height*4; y++){
-			for (var x=0;x<width*4;x+=4){
-				pos = x + y*width;
-				oldR = pixels[pos+R];	/*save original red*/
-				oldG = pixels[pos+G];
-				oldB = pixels[pos+B];
-				newRGB = find_closest_palette_color(oldR, oldG, oldB);
-				pixels[pos+R] = newRGB[R];	/*update red*/
-				pixels[pos+G] = newRGB[G];
-				pixels[pos+B] = newRGB[B];
-				pixels[pos+A] = 255;
-				
-				quant_error = [ (oldR-newRGB[R]), (oldG-newRGB[G]), (oldB-newRGB[B]) ];
 
-				addToPixel(pixels, x+4 +  y *  width, quant_error, 7.0 / ditherLevel);
-				addToPixel(pixels, x-4 + (y+4)*width, quant_error, 3.0 / ditherLevel);
-				addToPixel(pixels, x   + (y+4)*width, quant_error, 5.0 / ditherLevel);
-				addToPixel(pixels, x+4 + (y+4)*width, quant_error, 1.0 / ditherLevel);
-				
-			}
-		}
-		ctx = document.getElementById('editedCanvas').getContext('2d');
-		ctx.putImageData(imgData, 0, 0);
-	}
+function dither() {
+    const width = 800;
+    const height = 480;
+
+    const canvas = document.getElementById('editedCanvas');
+    const ctx = canvas.getContext('2d');
+    const image = ctx.getImageData(0, 0, width, height);
+    const pixels = image.data;
+
+    // Work with greyscale values and diffuse quantisation error.
+    const grey = new Float32Array(width * height);
+
+    for (let i = 0; i < grey.length; i++) {
+        const p = i * 4;
+        grey[i] = 0.299 * pixels[p]
+                + 0.587 * pixels[p + 1]
+                + 0.114 * pixels[p + 2];
+    }
+
+    function addError(x, y, error, weight) {
+        if (x >= 0 && x < width && y >= 0 && y < height) {
+            grey[y * width + x] += error * weight;
+        }
+    }
+
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+            const i = y * width + x;
+            const oldValue = grey[i];
+            const newValue = oldValue < 128 ? 0 : 255;
+            const error = oldValue - newValue;
+
+            grey[i] = newValue;
+
+            addError(x + 1, y,     error, 7 / 16);
+            addError(x - 1, y + 1, error, 3 / 16);
+            addError(x,     y + 1, error, 5 / 16);
+            addError(x + 1, y + 1, error, 1 / 16);
+        }
+    }
+
+    for (let i = 0; i < grey.length; i++) {
+        const p = i * 4;
+        const value = grey[i] < 128 ? 0 : 255;
+
+        pixels[p] = value;
+        pixels[p + 1] = value;
+        pixels[p + 2] = value;
+        pixels[p + 3] = 255;
+    }
+
+    ctx.putImageData(image, 0, 0);
+}
+
 	
 	</script>
 </body>
