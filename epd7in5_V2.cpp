@@ -232,10 +232,11 @@ void Epd::Reset(void) {
 
 void Epd::DisplayFrame(const unsigned char* frame_buffer) {
     // The web UI sends 1 = black and 0 = white.
+    // 0x10 is the black/white plane, so invert the incoming buffer.
     SendCommand(0x10);
     for (unsigned long j = 0; j < height; j++) {
         for (unsigned long i = 0; i < width/8; i++) {
-            SendData(frame_buffer[i + j * width/8]);
+            SendData((unsigned char)~frame_buffer[i + j * width/8]);
         }
     }
 
@@ -243,7 +244,7 @@ void Epd::DisplayFrame(const unsigned char* frame_buffer) {
     SendCommand(0x13);
     for (unsigned long j = 0; j < height; j++) {
         for (unsigned long i = 0; i < width/8; i++) {
-            SendData((unsigned char)~frame_buffer[i + j * width/8]);
+            SendData(frame_buffer[i + j * width/8]);
         }
     }
 
