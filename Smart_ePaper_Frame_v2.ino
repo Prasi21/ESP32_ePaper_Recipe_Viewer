@@ -24,10 +24,12 @@ void onWsEvent(AsyncWebSocket * server, AsyncWebSocketClient * client,
     }
     else{                         // Got binary data (the client sent the image)
       // Send the received data to the display buffer.
-      loadImage((const char*)data, len, info->index);
-      if((info->index + len) == info->len){   // if this data was the end of the file
+      loadImage((const char*)data, len);
+      // info->index is relative to the current WebSocket frame, so only
+      // refresh when the final frame of the message has been received.
+      if (info->final && (info->index + len) == info->len) {
         //client->text("IMAGE_LOADED");       // tell the client that the server got the image
-        Serial.printf("Updating Display: %d bytes total\n", info->len);
+        Serial.printf("Updating Display: %u bytes total\n", (unsigned int)imageWriteOffset);
         updateDisplay_withoutIdle();          // Display the image that received
       }
     }

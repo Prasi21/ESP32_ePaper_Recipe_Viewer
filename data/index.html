@@ -228,7 +228,16 @@ function sendImage() {
     console.log("Sending monochrome image:", bytes.length, "bytes");
     websocket.send(bytes.buffer);
     console.log("Image sent");
-    websocket.close();
+
+    // Wait for the 48 KB frame to leave the browser's send buffer before
+    // starting the closing handshake.
+    (function closeWhenFlushed() {
+        if (websocket.bufferedAmount > 0) {
+            setTimeout(closeWhenFlushed, 10);
+        } else {
+            websocket.close();
+        }
+    })();
 }
 
 	

@@ -11,6 +11,7 @@ static const size_t IMAGE_BYTES =
     (EPD_WIDTH * EPD_HEIGHT) / 8;
 
 static uint8_t imageBuffer[IMAGE_BYTES];
+static size_t imageWriteOffset = 0;
 static Epd epd;
 static bool displayDriverReady = false;
 
@@ -47,17 +48,20 @@ bool isDisplayBusy() {
 // Prepare to receive a new image.
 void displayStartTransmission() {
     memset(imageBuffer, 0, sizeof(imageBuffer));
+    imageWriteOffset = 0;
 }
 
-// Copy a WebSocket data chunk into its correct position.
-void loadImage(const char* data, size_t length, size_t offset) {
-    if (offset >= IMAGE_BYTES ||
-        length > IMAGE_BYTES - offset) {
+// Append a WebSocket data chunk. Frames/chunks arrive in order, so we cannot
+// use AwsFrameInfo::index here: it resets to zero for every WebSocket frame.
+void loadImage(const char* data, size_t length) {
+    if (imageWriteOffset >= IMAGE_BYTES ||
+        length > IMAGE_BYTES - imageWriteOffset) {
         Serial.println("Image data exceeds framebuffer size");
         return;
     }
 
-    memcpy(imageBuffer + offset, data, length);
+    memcpy(imageBuffer + imageWriteOffset, data, length);
+    imageWriteOffset += length;
 }
 
 
@@ -66,6 +70,15 @@ void loadImage(const char* data, size_t length, size_t offset) {
 void updateDisplay_withoutIdle() {
     if (!displayDriverReady) {
         Serial.println("Display driver is not ready");
+        return;
+    }
+
+    if (imageWriteOffset != IMAGE_BYTES) {
+        Serial.printf(
+            "Incomplete image: %u / %u bytes, skipping refresh\n",
+            (unsigned int)imageWriteOffset,
+            (unsigned int)IMAGE_BYTES
+        );
         return;
     }
 
